@@ -1,0 +1,299 @@
+{% extends "base.html" %}
+
+{% block title %}Attendance - Face Recognition{% endblock %}
+
+{% block page_title %}Face Recognition Attendance{% endblock %}
+
+{% block content %}
+<style>
+    .progress-bar-custom {
+        transition: width 0.3s ease;
+    }
+</style>
+<div class="row">
+    <!-- Camera Section -->
+    <div class="col-lg-8 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-camera"></i> Face Recognition Camera
+                </h5>
+                <div class="btn-group" role="group">
+                    <button class="btn btn-success" id="startCamera">
+                        <i class="fas fa-play"></i> Start Camera
+                    </button>
+                    <button class="btn btn-danger" id="stopCamera" style="display: none;">
+                        <i class="fas fa-stop"></i> Stop Camera
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="ratio ratio-16x9 bg-dark rounded" id="cameraContainer">
+                    <div class="d-flex align-items-center justify-content-center h-100">
+                        <div class="text-center text-white">
+                            <i class="fas fa-camera fa-4x mb-3"></i>
+                            <p>Click "Start Camera" to begin face recognition</p>
+                        </div>
+                    </div>
+                    <img id="cameraFeed" src="" style="display: none;" class="img-fluid rounded">
+                </div>
+                
+                <!-- Recognition Status -->
+                <div class="mt-3">
+                    <div class="alert alert-info" id="recognitionStatus">
+                        <i class="fas fa-info-circle"></i> Camera not started
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Today's Attendance -->
+    <div class="col-lg-4 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-calendar-check"></i> Today's Attendance
+                </h5>
+                <div class="btn-group" role="group">
+                    <a href="{{ url_for('reset_attendance') }}" 
+                       class="btn btn-warning btn-sm" 
+                       onclick="return confirm('Are you sure you want to reset all attendance records? This cannot be undone.')">
+                        <i class="fas fa-trash-alt"></i> Reset All
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <span class="badge bg-primary">{{ attendance|length }} Present</span>
+                    <span class="badge bg-secondary">{{ students|length - attendance|length }} Absent</span>
+                </div>
+                
+                {% if attendance %}
+                    <div class="list-group list-group-flush">
+                        {% for record in attendance %}
+                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <i class="fas fa-user-circle text-success"></i>
+                                    <span class="ms-2">{{ record.name }}</span>
+                                </div>
+                                <small class="text-muted">{{ record.time_in }}</small>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-user-clock fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">No attendance recorded yet</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-pie"></i> Statistics
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6">
+                        <div class="border-end">
+                            <h4 class="text-success">{{ attendance|length }}</h4>
+                            <small class="text-muted">Present</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <h4 class="text-danger">{{ students|length - attendance|length }}</h4>
+                        <small class="text-muted">Absent</small>
+                    </div>
+                </div>
+                <div class="progress mt-3" style="height: 10px;">
+                    {% if students|length > 0 %}
+                        {% set percentage = (attendance|length / students|length) * 100 %}
+                        <div class="progress-bar bg-success progress-bar-custom" data-width="{{ percentage|round|int }}"></div>
+                    {% else %}
+                        <div class="progress-bar bg-secondary progress-bar-custom" data-width="0"></div>
+                    {% endif %}
+                </div>
+                <small class="text-muted">
+                    {% if students|length > 0 %}
+                        Attendance Rate: {{ "%.1f"|format((attendance|length / students|length) * 100) }}%
+                    {% else %}
+                        No students registered
+                    {% endif %}
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Manual Attendance -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-user-check"></i> Manual Attendance
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for student in students %}
+                        <div class="col-md-3 col-sm-6 mb-3">
+                            <div class="card">
+                                <div class="card-body text-center">
+                                    <img src="https://ui-avatars.com/api/?name={{ student.name }}&size=60&background=667eea&color=fff" 
+                                         class="rounded-circle mb-2" alt="{{ student.name }}">
+                                    <h6 class="card-title">{{ student.name }}</h6>
+                                    <button class="btn btn-sm btn-outline-primary mark-attendance-btn" 
+                                            data-student-name="{{ student.name }}">
+                                        <i class="fas fa-check"></i> Mark Present
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Set progress bar widths from data attributes
+document.addEventListener('DOMContentLoaded', function() {
+    const progressBars = document.querySelectorAll('.progress-bar-custom');
+    progressBars.forEach(bar => {
+        const width = bar.getAttribute('data-width');
+        if (width) {
+            bar.style.width = width + '%';
+        }
+    });
+});
+
+let cameraStream = null;
+let recognitionInterval = null;
+
+// Start camera
+document.getElementById('startCamera').addEventListener('click', function() {
+    const videoElement = document.getElementById('cameraFeed');
+    const statusElement = document.getElementById('recognitionStatus');
+    
+    // Show video feed
+    videoElement.src = '/camera_feed';
+    videoElement.style.display = 'block';
+    document.querySelector('#cameraContainer > div').style.display = 'none';
+    
+    // Update UI
+    this.style.display = 'none';
+    document.getElementById('stopCamera').style.display = 'inline-block';
+    
+    statusElement.className = 'alert alert-success';
+    statusElement.innerHTML = '<i class="fas fa-circle text-success"></i> Camera active - Face recognition running';
+    
+    // Start face recognition simulation
+    startFaceRecognition();
+});
+
+// Stop camera
+document.getElementById('stopCamera').addEventListener('click', function() {
+    stopCamera();
+});
+
+function stopCamera() {
+    const videoElement = document.getElementById('cameraFeed');
+    const statusElement = document.getElementById('recognitionStatus');
+    
+    // Stop video feed
+    videoElement.src = '';
+    videoElement.style.display = 'none';
+    document.querySelector('#cameraContainer > div').style.display = 'flex';
+    
+    // Update UI
+    document.getElementById('startCamera').style.display = 'inline-block';
+    this.style.display = 'none';
+    
+    statusElement.className = 'alert alert-info';
+    statusElement.innerHTML = '<i class="fas fa-info-circle"></i> Camera stopped';
+    
+    // Stop face recognition
+    if (recognitionInterval) {
+        clearInterval(recognitionInterval);
+        recognitionInterval = null;
+    }
+}
+
+function startFaceRecognition() {
+    // Simulate face recognition every 3 seconds
+    recognitionInterval = setInterval(() => {
+        // This would integrate with actual face recognition
+        // For now, just show that it's working
+        const statusElement = document.getElementById('recognitionStatus');
+        statusElement.innerHTML = '<i class="fas fa-circle text-success"></i> Scanning for faces...';
+    }, 3000);
+}
+
+// Manual attendance marking
+document.querySelectorAll('.mark-attendance-btn').forEach(button => {
+    button.addEventListener('click', function() {
+        const studentName = this.dataset.studentName;
+        
+        fetch('/mark_attendance', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ student_name: studentName })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                this.innerHTML = '<i class="fas fa-check-circle"></i> Marked';
+                this.classList.remove('btn-outline-primary');
+                this.classList.add('btn-success');
+                this.disabled = true;
+                
+                // Show success message
+                const alert = document.createElement('div');
+                alert.className = 'alert alert-success alert-dismissible fade show';
+                alert.innerHTML = `
+                    ${data.message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+                document.querySelector('.card-body').prepend(alert);
+                
+                // Refresh page after 2 seconds
+                setTimeout(() => location.reload(), 2000);
+            } else {
+                // Show error message
+                const alert = document.createElement('div');
+                alert.className = 'alert alert-warning alert-dismissible fade show';
+                alert.innerHTML = `
+                    ${data.message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+                document.querySelector('.card-body').prepend(alert);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+    });
+});
+
+// Auto-refresh attendance every 30 seconds
+setInterval(() => {
+    fetch('/api/attendance')
+        .then(response => response.json())
+        .then(data => {
+            // Update attendance display
+            console.log('Attendance updated:', data);
+        });
+}, 30000);
+</script>
+{% endblock %}

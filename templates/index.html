@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Classroom Management{% endblock %}
+
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Statistics Cards -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <h5 class="card-title mb-0">Total Students</h5>
+                        <p class="card-text h2">{{ students|length }}</p>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-users fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <h5 class="card-title mb-0">Today's Attendance</h5>
+                        <p class="card-text h2">{{ attendance|length }}</p>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-check-circle fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <h5 class="card-title mb-0">Attendance Rate</h5>
+                        <p class="card-text h2">
+                            {% if students|length > 0 %}
+                                {{ "%.1f"|format((attendance|length / students|length) * 100) }}%
+                            {% else %}
+                                0%
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-chart-line fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <h5 class="card-title mb-0">Active Classes</h5>
+                        <p class="card-text h2">1</p>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-chalkboard fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Recent Attendance -->
+    <div class="col-lg-8 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fas fa-clock"></i> Recent Attendance</h5>
+            </div>
+            <div class="card-body">
+                {% if attendance %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Student Name</th>
+                                    <th>Date</th>
+                                    <th>Time</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for record in attendance %}
+                                    <tr>
+                                        <td>
+                                            <i class="fas fa-user-circle text-primary"></i>
+                                            {{ record.name if record.name else 'Unknown' }}
+                                        </td>
+                                        <td>{{ record.time_in if record.time_in else 'N/A' }}</td>
+                                        <td>{{ record.time_in if record.time_in else 'N/A' }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">No attendance records found</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="col-lg-4 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fas fa-bolt"></i> Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('add_student') }}" class="btn btn-primary">
+                        <i class="fas fa-user-plus"></i> Add New Student
+                    </a>
+                    <a href="{{ url_for('classroom') }}" class="btn btn-info">
+                        <i class="fas fa-users"></i> View Classroom
+                    </a>
+                    <a href="{{ url_for('train_faces') }}" class="btn btn-warning">
+                        <i class="fas fa-brain"></i> Train Face Recognition
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Students List -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fas fa-users"></i> Students</h5>
+            </div>
+            <div class="card-body">
+                {% if students %}
+                    {% for student in students %}
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span><i class="fas fa-user text-primary"></i> {{ student.name }}</span>
+                            <small class="text-muted">ID: {{ student.id }}</small>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted">No students registered</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

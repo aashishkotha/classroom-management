@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+
+{% block title %}Add Student - Classroom Management{% endblock %}
+
+{% block page_title %}Add New Student{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-user-plus"></i> Register New Student
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data" id="addStudentForm">
+                    <!-- Basic Information -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <label for="name" class="form-label">Student Name *</label>
+                            <input type="text" class="form-control" id="name" name="name" required>
+                            <div class="form-text">Enter the full name of the student</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="roll_number" class="form-label">Roll Number</label>
+                            <input type="text" class="form-control" id="roll_number" name="roll_number">
+                            <div class="form-text">Optional: Enter roll number or ID</div>
+                        </div>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <label for="email" class="form-label">Email Address</label>
+                            <input type="email" class="form-control" id="email" name="email">
+                            <div class="form-text">Optional: Enter email address</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Images Required</label>
+                            <div class="form-control-plaintext">
+                                <span class="badge bg-info">5-10 images recommended</span>
+                                <small class="text-muted d-block">For better face recognition accuracy</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Image Upload -->
+                    <div class="mb-4">
+                        <label for="images" class="form-label">Student Photos *</label>
+                        <div class="border border-dashed rounded p-4 text-center" id="dropZone">
+                            <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
+                            <p class="mb-2">Drag and drop images here or click to browse</p>
+                            <p class="text-muted small">Supported formats: JPG, PNG, JPEG, GIF (Max 16MB)</p>
+                            <input type="file" class="form-control" id="images" name="images" multiple 
+                                   accept="image/*" style="display: none;" required>
+                            <button type="button" class="btn btn-outline-primary" onclick="document.getElementById('images').click()">
+                                <i class="fas fa-folder-open"></i> Choose Files
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Image Preview -->
+                    <div class="mb-4" id="imagePreview" style="display: none;">
+                        <label class="form-label">Selected Images</label>
+                        <div class="row" id="previewGrid"></div>
+                    </div>
+
+                    <!-- Guidelines -->
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-info-circle"></i> Photo Guidelines:</h6>
+                        <ul class="mb-0">
+                            <li>Clear, front-facing photos with good lighting</li>
+                            <li>Different angles and expressions help recognition</li>
+                            <li>Avoid sunglasses, masks, or heavy shadows</li>
+                            <li>High-quality images work best for training</li>
+                        </ul>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('classroom') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Back to Classroom
+                        </a>
+                        <div>
+                            <button type="reset" class="btn btn-outline-danger me-2">
+                                <i class="fas fa-redo"></i> Reset
+                            </button>
+                            <button type="submit" class="btn btn-primary" id="submitBtn">
+                                <i class="fas fa-save"></i> Add Student
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Drag and drop functionality
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('images');
+const imagePreview = document.getElementById('imagePreview');
+const previewGrid = document.getElementById('previewGrid');
+
+// Prevent default drag behaviors
+['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+    dropZone.addEventListener(eventName, preventDefaults, false);
+});
+
+function preventDefaults(e) {
+    e.preventDefault();
+    e.stopPropagation();
+}
+
+// Highlight drop zone when item is dragged over it
+['dragenter', 'dragover'].forEach(eventName => {
+    dropZone.addEventListener(eventName, highlight, false);
+});
+
+['dragleave', 'drop'].forEach(eventName => {
+    dropZone.addEventListener(eventName, unhighlight, false);
+});
+
+function highlight(e) {
+    dropZone.classList.add('border-primary', 'bg-light');
+}
+
+function unhighlight(e) {
+    dropZone.classList.remove('border-primary', 'bg-light');
+}
+
+// Handle dropped files
+dropZone.addEventListener('drop', handleDrop, false);
+
+function handleDrop(e) {
+    const dt = e.dataTransfer;
+    const files = dt.files;
+    fileInput.files = files;
+    handleFiles(files);
+}
+
+// Handle file selection
+fileInput.addEventListener('change', function(e) {
+    handleFiles(this.files);
+});
+
+function handleFiles(files) {
+    previewGrid.innerHTML = '';
+    let validFiles = 0;
+
+    Array.from(files).forEach(file => {
+        if (file.type.startsWith('image/')) {
+            validFiles++;
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                const col = document.createElement('div');
+                col.className = 'col-md-3 col-sm-4 col-6 mb-3';
+                col.innerHTML = `
+                    <div class="position-relative">
+                        <img src="${e.target.result}" class="img-fluid rounded border" alt="Preview">
+                        <span class="position-absolute top-0 end-0 bg-danger text-white rounded-circle p-1" 
+                              style="font-size: 0.8rem; cursor: pointer;" onclick="removeImage(this)">×</span>
+                    </div>
+                `;
+                previewGrid.appendChild(col);
+            };
+            
+            reader.readAsDataURL(file);
+        }
+    });
+
+    if (validFiles > 0) {
+        imagePreview.style.display = 'block';
+    } else {
+        imagePreview.style.display = 'none';
+    }
+}
+
+// Remove image from preview
+function removeImage(element) {
+    element.closest('.col-md-3').remove();
+    if (previewGrid.children.length === 0) {
+        imagePreview.style.display = 'none';
+    }
+}
+
+// Form validation
+document.getElementById('addStudentForm').addEventListener('submit', function(e) {
+    const name = document.getElementById('name').value.trim();
+    const files = fileInput.files;
+    
+    if (!name) {
+        e.preventDefault();
+        alert('Please enter student name');
+        return;
+    }
+    
+    if (files.length === 0) {
+        e.preventDefault();
+        alert('Please select at least one image');
+        return;
+    }
+    
+    // Show loading state
+    const submitBtn = document.getElementById('submitBtn');
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adding Student...';
+    submitBtn.disabled = true;
+});
+
+// Click on drop zone to open file dialog
+dropZone.addEventListener('click', function() {
+    fileInput.click();
+});
+</script>
+{% endblock %}

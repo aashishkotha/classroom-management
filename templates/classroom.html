@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+
+{% block title %}Classroom - Student Management{% endblock %}
+
+{% block page_title %}Classroom Management{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group" role="group">
+    <a href="{{ url_for('add_student') }}" class="btn btn-primary">
+        <i class="fas fa-user-plus"></i> Add Student
+    </a>
+    <a href="{{ url_for('train_faces') }}" class="btn btn-warning">
+        <i class="fas fa-brain"></i> Train Faces
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Students Grid -->
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-users"></i> Registered Students ({{ students|length }})
+                </h5>
+                <div class="input-group" style="max-width: 300px;">
+                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                    <input type="text" class="form-control" id="searchStudents" placeholder="Search students...">
+                </div>
+            </div>
+            <div class="card-body">
+                {% if students %}
+                    <div class="row" id="studentsGrid">
+                        {% for student in students %}
+                            <div class="col-lg-3 col-md-4 col-sm-6 mb-4 student-card" data-name="{{ student.name.lower() }}">
+                                <div class="card h-100">
+                                    <div class="card-body text-center">
+                                        <div class="mb-3">
+                                            <img src="https://ui-avatars.com/api/?name={{ student.name }}&size=80&background=667eea&color=fff" 
+                                                 class="rounded-circle" alt="{{ student.name }}" style="width: 80px; height: 80px;">
+                                        </div>
+                                        <h5 class="card-title">{{ student.name }}</h5>
+                                        <p class="card-text text-muted">Student ID: {{ student.id }}</p>
+                                        <div class="d-flex justify-content-between">
+                                            <button class="btn btn-sm btn-outline-primary" onclick="viewStudent('{{ student.name }}')">
+                                                <i class="fas fa-eye"></i> View
+                                            </button>
+                                            <a href="{{ url_for('delete_student', student_id=student.id) }}" 
+                                               class="btn btn-sm btn-outline-danger" 
+                                               onclick="return confirm('Are you sure you want to delete {{ student.name }}?')">
+                                                <i class="fas fa-trash"></i> Delete
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-user-slash fa-4x text-muted mb-3"></i>
+                        <h4 class="text-muted">No Students Registered</h4>
+                        <p class="text-muted">Start by adding your first student to the classroom.</p>
+                        <a href="{{ url_for('add_student') }}" class="btn btn-primary">
+                            <i class="fas fa-user-plus"></i> Add First Student
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Student Details Modal -->
+<div class="modal fade" id="studentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Student Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="studentDetails">
+                <!-- Student details will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Search functionality
+document.getElementById('searchStudents').addEventListener('input', function(e) {
+    const searchTerm = e.target.value.toLowerCase();
+    const studentCards = document.querySelectorAll('.student-card');
+    
+    studentCards.forEach(card => {
+        const name = card.dataset.name;
+        if (name.includes(searchTerm)) {
+            card.style.display = '';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+});
+
+// View student details
+function viewStudent(name) {
+    const modal = new bootstrap.Modal(document.getElementById('studentModal'));
+    const detailsDiv = document.getElementById('studentDetails');
+    
+    // Simulate loading student details
+    detailsDiv.innerHTML = `
+        <div class="text-center">
+            <img src="https://ui-avatars.com/api/?name=${name}&size=120&background=667eea&color=fff" 
+                 class="rounded-circle mb-3" alt="${name}" style="width: 120px; height: 120px;">
+            <h4>${name}</h4>
+            <p class="text-muted">Student ID: {{ students[name] if name in students else 'N/A' }}</p>
+            <hr>
+            <div class="row text-start">
+                <div class="col-6">
+                    <strong>Status:</strong> <span class="badge bg-success">Active</span>
+                </div>
+                <div class="col-6">
+                    <strong>Images:</strong> <span class="badge bg-info">5-10</span>
+                </div>
+                <div class="col-6 mt-2">
+                    <strong>Registered:</strong> Today
+                </div>
+                <div class="col-6 mt-2">
+                    <strong>Last Seen:</strong> Today
+                </div>
+            </div>
+        </div>
+    `;
+    
+    modal.show();
+}
+
+// Auto-refresh every 30 seconds
+setInterval(() => {
+    location.reload();
+}, 30000);
+</script>
+{% endblock %}
