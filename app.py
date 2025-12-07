@@ -1,13 +1,18 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, Response
 import os
-import pickle
-import csv
-import shutil
 from datetime import datetime
-import cv2
+try:
+    import cv2
+    CV2_AVAILABLE = True
+except ImportError:
+    CV2_AVAILABLE = False
+try:
+    import numpy as np
+    NUMPY_AVAILABLE = True
+except ImportError:
+    NUMPY_AVAILABLE = False
 from werkzeug.utils import secure_filename
 import sqlite3
-import numpy as np
 import time
 
 app = Flask(__name__)
@@ -154,6 +159,13 @@ def attendance():
 @app.route('/camera_feed')
 def camera_feed():
     """Video streaming route with face recognition"""
+    if not CV2_AVAILABLE or not NUMPY_AVAILABLE:
+        # Return a placeholder image if OpenCV or numpy is not available
+        def generate_placeholder():
+            yield b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + b'Camera not available on cloud hosting' + b'\r\n'
+        
+        return Response(generate_placeholder(), mimetype='multipart/x-mixed-replace; boundary=frame')
+    
     def generate_frames():
         try:
             from simple_face_recognition import SimpleFaceRecognition
