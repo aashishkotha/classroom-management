@@ -55,3 +55,4 @@ Thumbs.db
 
 # Pickle files
 *.pickle
+.vercel
