@@ -103,18 +103,7 @@ def init_database():
         )
     ''')
 
-    # Migration: Add last_login to users
-    try:
-        cursor.execute("SELECT last_login FROM users LIMIT 1")
-    except sqlite3.OperationalError:
-        print("Migrating DB: Adding last_login to users...")
-        cursor.execute("ALTER TABLE users ADD COLUMN last_login TIMESTAMP")
-    
-    # Ensure active column exists for everyone if missing (safety)
-    try:
-         cursor.execute("SELECT is_active FROM students LIMIT 1")
-    except:
-         cursor.execute("ALTER TABLE students ADD COLUMN is_active BOOLEAN DEFAULT 1")
+
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS classes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -206,6 +195,21 @@ def init_database():
             VALUES (?, ?, ?, ?)
         ''', ('Default Class', 'General', 'Admin', 'Room 101'))
     
+    # Run Migrations (Safe because tables exist now)
+    
+    # Migration: Add last_login to users
+    try:
+        cursor.execute("SELECT last_login FROM users LIMIT 1")
+    except sqlite3.OperationalError:
+        print("Migrating DB: Adding last_login to users...")
+        cursor.execute("ALTER TABLE users ADD COLUMN last_login TIMESTAMP")
+    
+    # Ensure active column exists for everyone if missing (safety)
+    try:
+         cursor.execute("SELECT is_active FROM students LIMIT 1")
+    except:
+         cursor.execute("ALTER TABLE students ADD COLUMN is_active BOOLEAN DEFAULT 1")
+
     conn.commit()
     conn.close()
     print("Database initialized successfully!")
