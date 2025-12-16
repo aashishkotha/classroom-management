@@ -1,164 +1,219 @@
 {% extends "base.html" %}
 
-{% block title %}Dashboard - Classroom Management{% endblock %}
+{% block title %}Dashboard - Smart Attendance System{% endblock %}
 
 {% block page_title %}Dashboard{% endblock %}
+{% block page_subtitle %}Overview of your classroom management system{% endblock %}
 
 {% block content %}
-<div class="row">
-    <!-- Statistics Cards -->
-    <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card stats-card">
-            <div class="card-body">
-                <div class="row align-items-center">
-                    <div class="col">
-                        <h5 class="card-title mb-0">Total Students</h5>
-                        <p class="card-text h2">{{ students|length }}</p>
-                    </div>
-                    <div class="col-auto">
-                        <i class="fas fa-users fa-2x opacity-75"></i>
-                    </div>
+<!-- Statistics Cards -->
+<div class="row g-4 mb-4">
+    <div class="col-xl-3 col-md-6">
+        <div class="stats-card primary">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <p class="text-muted mb-1">Total Students</p>
+                    <h2 class="fw-bold mb-0">{{ students_count }}</h2>
+                </div>
+                <div class="icon">
+                    <i class="fas fa-users"></i>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card stats-card">
-            <div class="card-body">
-                <div class="row align-items-center">
-                    <div class="col">
-                        <h5 class="card-title mb-0">Today's Attendance</h5>
-                        <p class="card-text h2">{{ attendance|length }}</p>
-                    </div>
-                    <div class="col-auto">
-                        <i class="fas fa-check-circle fa-2x opacity-75"></i>
-                    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="stats-card success">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <p class="text-muted mb-1">Today's Attendance</p>
+                    <h2 class="fw-bold mb-0">{{ attendance_count }}</h2>
+                </div>
+                <div class="icon">
+                    <i class="fas fa-check-circle"></i>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card stats-card">
-            <div class="card-body">
-                <div class="row align-items-center">
-                    <div class="col">
-                        <h5 class="card-title mb-0">Attendance Rate</h5>
-                        <p class="card-text h2">
-                            {% if students|length > 0 %}
-                                {{ "%.1f"|format((attendance|length / students|length) * 100) }}%
-                            {% else %}
-                                0%
-                            {% endif %}
-                        </p>
-                    </div>
-                    <div class="col-auto">
-                        <i class="fas fa-chart-line fa-2x opacity-75"></i>
-                    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="stats-card warning">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <p class="text-muted mb-1">Attendance Rate</p>
+                    <h2 class="fw-bold mb-0">{{ "%.1f"|format(attendance_rate) }}%</h2>
+                </div>
+                <div class="icon">
+                    <i class="fas fa-chart-line"></i>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card stats-card">
-            <div class="card-body">
-                <div class="row align-items-center">
-                    <div class="col">
-                        <h5 class="card-title mb-0">Active Classes</h5>
-                        <p class="card-text h2">1</p>
-                    </div>
-                    <div class="col-auto">
-                        <i class="fas fa-chalkboard fa-2x opacity-75"></i>
-                    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="stats-card danger">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <p class="text-muted mb-1">Active Classes</p>
+                    <h2 class="fw-bold mb-0">{{ classes_count }}</h2>
+                </div>
+                <div class="icon">
+                    <i class="fas fa-chalkboard"></i>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<div class="row">
+<div class="row g-4">
     <!-- Recent Attendance -->
-    <div class="col-lg-8 mb-4">
+    <div class="col-lg-8">
         <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0"><i class="fas fa-clock"></i> Recent Attendance</h5>
+            <div class="card-header bg-white border-0 py-3">
+                <h5 class="mb-0 fw-bold">
+                    <i class="fas fa-clock text-primary me-2"></i>
+                    Recent Attendance
+                </h5>
             </div>
             <div class="card-body">
-                {% if attendance %}
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>Student Name</th>
-                                    <th>Date</th>
-                                    <th>Time</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for record in attendance %}
-                                    <tr>
-                                        <td>
-                                            <i class="fas fa-user-circle text-primary"></i>
-                                            {{ record.name if record.name else 'Unknown' }}
-                                        </td>
-                                        <td>{{ record.time_in if record.time_in else 'N/A' }}</td>
-                                        <td>{{ record.time_in if record.time_in else 'N/A' }}</td>
-                                    </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
+                {% if recent_attendance %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead>
+                            <tr>
+                                <th>Student Name</th>
+                                <th>Roll Number</th>
+                                <th>Class</th>
+                                <th>Time</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for record in recent_attendance %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="avatar-circle me-2">
+                                            <i class="fas fa-user"></i>
+                                        </div>
+                                        <strong>{{ record.name }}</strong>
+                                    </div>
+                                </td>
+                                <td>{{ record.roll_number or 'N/A' }}</td>
+                                <td>
+                                    <span class="badge bg-primary">{{ record.class_name }}</span>
+                                </td>
+                                <td>{{ record.time_in }}</td>
+                                <td>
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-check"></i> Present
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
                 {% else %}
-                    <div class="text-center py-4">
-                        <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
-                        <p class="text-muted">No attendance records found</p>
-                    </div>
+                <div class="text-center py-5">
+                    <i class="fas fa-calendar-times fa-4x text-muted mb-3"></i>
+                    <h5 class="text-muted">No attendance records today</h5>
+                    <p class="text-muted">Start marking attendance to see records here</p>
+                    <a href="{{ url_for('attendance') }}" class="btn btn-primary">
+                        <i class="fas fa-camera"></i> Start Attendance
+                    </a>
+                </div>
                 {% endif %}
             </div>
         </div>
     </div>
 
-    <!-- Quick Actions -->
-    <div class="col-lg-4 mb-4">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0"><i class="fas fa-bolt"></i> Quick Actions</h5>
+    <!-- Quick Actions & Classes -->
+    <div class="col-lg-4">
+        <!-- Quick Actions -->
+        <div class="card mb-4">
+            <div class="card-header bg-white border-0 py-3">
+                <h5 class="mb-0 fw-bold">
+                    <i class="fas fa-bolt text-warning me-2"></i>
+                    Quick Actions
+                </h5>
             </div>
             <div class="card-body">
-                <div class="d-grid gap-2">
-                    <a href="{{ url_for('add_student') }}" class="btn btn-primary">
-                        <i class="fas fa-user-plus"></i> Add New Student
+                <div class="d-grid gap-3">
+                    <a href="{{ url_for('attendance') }}" class="btn btn-primary">
+                        <i class="fas fa-camera me-2"></i> Mark Attendance
                     </a>
-                    <a href="{{ url_for('classroom') }}" class="btn btn-info">
-                        <i class="fas fa-users"></i> View Classroom
+                    <a href="{{ url_for('add_student') }}" class="btn btn-success">
+                        <i class="fas fa-user-plus me-2"></i> Add Student
+                    </a>
+                    <a href="{{ url_for('add_class') }}" class="btn btn-info text-white">
+                        <i class="fas fa-plus-circle me-2"></i> Add Class
                     </a>
                     <a href="{{ url_for('train_faces') }}" class="btn btn-warning">
-                        <i class="fas fa-brain"></i> Train Face Recognition
+                        <i class="fas fa-brain me-2"></i> Train System
                     </a>
                 </div>
             </div>
         </div>
 
-        <!-- Students List -->
-        <div class="card mt-3">
-            <div class="card-header">
-                <h5 class="card-title mb-0"><i class="fas fa-users"></i> Students</h5>
+        <!-- Classes List -->
+        <div class="card">
+            <div class="card-header bg-white border-0 py-3">
+                <h5 class="mb-0 fw-bold">
+                    <i class="fas fa-chalkboard text-info me-2"></i>
+                    Active Classes
+                </h5>
             </div>
             <div class="card-body">
-                {% if students %}
-                    {% for student in students %}
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span><i class="fas fa-user text-primary"></i> {{ student.name }}</span>
-                            <small class="text-muted">ID: {{ student.id }}</small>
+                {% if classes %}
+                <div class="list-group list-group-flush">
+                    {% for class in classes %}
+                    <a href="{{ url_for('students', class_id=class.id) }}"
+                        class="list-group-item list-group-item-action border-0 px-0">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-0">{{ class.name }}</h6>
+                                <small class="text-muted">{{ class.subject or 'No subject' }}</small>
+                            </div>
+                            <i class="fas fa-chevron-right text-muted"></i>
                         </div>
+                    </a>
                     {% endfor %}
+                </div>
                 {% else %}
-                    <p class="text-muted">No students registered</p>
+                <div class="text-center py-3">
+                    <p class="text-muted mb-2">No classes yet</p>
+                    <a href="{{ url_for('add_class') }}" class="btn btn-sm btn-primary">
+                        <i class="fas fa-plus"></i> Add Class
+                    </a>
+                </div>
                 {% endif %}
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .avatar-circle {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+    }
+
+    .list-group-item {
+        transition: all 0.3s ease;
+    }
+
+    .list-group-item:hover {
+        background: rgba(102, 126, 234, 0.05);
+        transform: translateX(5px);
+    }
+</style>
 {% endblock %}

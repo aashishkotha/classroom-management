@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+
+{% block title %}Students - Smart Attendance System{% endblock %}
+
+{% block page_title %}
+{% if current_class %}
+{{ current_class.name }} - Students
+{% else %}
+All Students
+{% endif %}
+{% endblock %}
+
+{% block page_subtitle %}
+{% if current_class %}
+Manage students in {{ current_class.name }}
+{% else %}
+Manage all students across classes
+{% endif %}
+{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{{ url_for('add_student') }}" class="btn btn-primary">
+        <i class="fas fa-user-plus me-2"></i> Add Student
+    </a>
+    <a href="{{ url_for('train_faces') }}" class="btn btn-warning">
+        <i class="fas fa-brain me-2"></i> Train System
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Class Filter -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <label class="form-label fw-bold">Filter by Class:</label>
+                <select class="form-select" onchange="window.location.href=this.value">
+                    <option value="{{ url_for('students') }}" {% if not current_class %}selected{% endif %}>
+                        All Classes
+                    </option>
+                    {% for class in classes %}
+                    <option value="{{ url_for('students', class_id=class.id) }}" {% if current_class and
+                        current_class.id==class.id %}selected{% endif %}>
+                        {{ class.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label fw-bold">Search Students:</label>
+                <input type="text" class="form-control" id="searchStudents"
+                    placeholder="Search by name or roll number...">
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Students Grid -->
+{% if students %}
+<div class="row g-4" id="studentsGrid">
+    {% for student in students %}
+    <div class="col-lg-3 col-md-4 col-sm-6 student-card" data-name="{{ student.name.lower() }}"
+        data-roll="{{ student.roll_number or '' }}">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <div class="student-avatar mb-3">
+                    <img src="https://ui-avatars.com/api/?name={{ student.name }}&size=100&background=667eea&color=fff&bold=true"
+                        class="rounded-circle" alt="{{ student.name }}">
+                </div>
+
+                <h5 class="fw-bold mb-1">{{ student.name }}</h5>
+
+                {% if student.roll_number %}
+                <p class="text-muted mb-2">
+                    <i class="fas fa-id-card me-1"></i> {{ student.roll_number }}
+                </p>
+                {% endif %}
+
+                <span class="badge bg-primary mb-3">{{ student.class_name }}</span>
+
+                {% if student.email %}
+                <p class="text-muted small mb-1">
+                    <i class="fas fa-envelope me-1"></i> {{ student.email }}
+                </p>
+                {% endif %}
+
+                {% if student.phone %}
+                <p class="text-muted small mb-3">
+                    <i class="fas fa-phone me-1"></i> {{ student.phone }}
+                </p>
+                {% endif %}
+
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('edit_student', student_id=student.id) }}"
+                        class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-edit"></i> Edit
+                    </a>
+                    <a href="{{ url_for('delete_student', student_id=student.id) }}"
+                        class="btn btn-sm btn-outline-danger"
+                        onclick="return confirm('Are you sure you want to delete {{ student.name }}?')">
+                        <i class="fas fa-trash"></i> Delete
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="card">
+    <div class="card-body text-center py-5">
+        <i class="fas fa-users fa-5x text-muted mb-4"></i>
+        <h3 class="text-muted mb-3">No Students Found</h3>
+        <p class="text-muted mb-4">
+            {% if current_class %}
+            No students in {{ current_class.name }} yet. Add your first student to get started.
+            {% else %}
+            No students registered yet. Add your first student to get started.
+            {% endif %}
+        </p>
+        <a href="{{ url_for('add_student') }}" class="btn btn-primary btn-lg">
+            <i class="fas fa-user-plus me-2"></i> Add First Student
+        </a>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Search functionality
+    document.getElementById('searchStudents').addEventListener('input', function (e) {
+        const searchTerm = e.target.value.toLowerCase();
+        const studentCards = document.querySelectorAll('.student-card');
+
+        studentCards.forEach(card => {
+            const name = card.dataset.name;
+            const roll = card.dataset.roll.toLowerCase();
+
+            if (name.includes(searchTerm) || roll.includes(searchTerm)) {
+                card.style.display = '';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    });
+</script>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .student-avatar img {
+        width: 100px;
+        height: 100px;
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        transition: all 0.3s ease;
+    }
+
+    .student-avatar img:hover {
+        transform: scale(1.1);
+        box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    .student-card {
+        transition: all 0.3s ease;
+    }
+</style>
+{% endblock %}

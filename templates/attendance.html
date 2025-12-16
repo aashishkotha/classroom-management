@@ -1,161 +1,200 @@
 {% extends "base.html" %}
 
-{% block title %}Attendance - Face Recognition{% endblock %}
+{% block title %}Attendance - Smart Attendance System{% endblock %}
 
-{% block page_title %}Face Recognition Attendance{% endblock %}
+{% block page_title %}Take Attendance{% endblock %}
+{% block page_subtitle %}Mark attendance using face recognition{% endblock %}
+
+{% block page_actions %}
+<a href="{{ url_for('reset_attendance') }}" class="btn btn-danger"
+    onclick="return confirm('Are you sure you want to reset all attendance records?')">
+    <i class="fas fa-redo me-2"></i> Reset Attendance
+</a>
+{% endblock %}
 
 {% block content %}
-<style>
-    .progress-bar-custom {
-        transition: width 0.3s ease;
-    }
-</style>
-<div class="row">
-    <!-- Camera Section -->
-    <div class="col-lg-8 mb-4">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="card-title mb-0">
-                    <i class="fas fa-camera"></i> Face Recognition Camera
-                </h5>
-                <div class="btn-group" role="group">
-                    <button class="btn btn-success" id="startCamera">
-                        <i class="fas fa-play"></i> Start Camera
-                    </button>
-                    <button class="btn btn-danger" id="stopCamera" style="display: none;">
-                        <i class="fas fa-stop"></i> Stop Camera
-                    </button>
-                </div>
+<!-- Class Selection -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <label class="form-label fw-bold">Select Class:</label>
+                <select class="form-select" onchange="window.location.href=this.value">
+                    <option value="{{ url_for('attendance') }}" {% if not current_class %}selected{% endif %}>
+                        All Classes
+                    </option>
+                    {% for class in classes %}
+                    <option value="{{ url_for('attendance', class_id=class.id) }}" {% if current_class and
+                        current_class.id==class.id %}selected{% endif %}>
+                        {{ class.name }}
+                    </option>
+                    {% endfor %}
+                </select>
             </div>
-            <div class="card-body">
-                <div class="ratio ratio-16x9 bg-dark rounded" id="cameraContainer">
-                    <div class="d-flex align-items-center justify-content-center h-100">
-                        <div class="text-center text-white">
-                            <i class="fas fa-camera fa-4x mb-3"></i>
-                            <p>Click "Start Camera" to begin face recognition</p>
-                        </div>
-                    </div>
-                    <img id="cameraFeed" src="" style="display: none;" class="img-fluid rounded">
+            <div class="col-md-6 text-end">
+                <div class="attendance-stats">
+                    <h3 class="mb-0">{{ attendance|length }}</h3>
+                    <small class="text-muted">Present Today</small>
                 </div>
-                
-                <!-- Recognition Status -->
-                <div class="mt-3">
-                    <div class="alert alert-info" id="recognitionStatus">
-                        <i class="fas fa-info-circle"></i> Camera not started
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Today's Attendance -->
-    <div class="col-lg-4 mb-4">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="card-title mb-0">
-                    <i class="fas fa-calendar-check"></i> Today's Attendance
-                </h5>
-                <div class="btn-group" role="group">
-                    <a href="{{ url_for('reset_attendance') }}" 
-                       class="btn btn-warning btn-sm" 
-                       onclick="return confirm('Are you sure you want to reset all attendance records? This cannot be undone.')">
-                        <i class="fas fa-trash-alt"></i> Reset All
-                    </a>
-                </div>
-            </div>
-            <div class="card-body">
-                <div class="mb-3">
-                    <span class="badge bg-primary">{{ attendance|length }} Present</span>
-                    <span class="badge bg-secondary">{{ students|length - attendance|length }} Absent</span>
-                </div>
-                
-                {% if attendance %}
-                    <div class="list-group list-group-flush">
-                        {% for record in attendance %}
-                            <div class="list-group-item d-flex justify-content-between align-items-center">
-                                <div>
-                                    <i class="fas fa-user-circle text-success"></i>
-                                    <span class="ms-2">{{ record.name }}</span>
-                                </div>
-                                <small class="text-muted">{{ record.time_in }}</small>
-                            </div>
-                        {% endfor %}
-                    </div>
-                {% else %}
-                    <div class="text-center py-4">
-                        <i class="fas fa-user-clock fa-3x text-muted mb-3"></i>
-                        <p class="text-muted">No attendance recorded yet</p>
-                    </div>
-                {% endif %}
-            </div>
-        </div>
-
-        <!-- Quick Stats -->
-        <div class="card mt-3">
-            <div class="card-header">
-                <h5 class="card-title mb-0">
-                    <i class="fas fa-chart-pie"></i> Statistics
-                </h5>
-            </div>
-            <div class="card-body">
-                <div class="row text-center">
-                    <div class="col-6">
-                        <div class="border-end">
-                            <h4 class="text-success">{{ attendance|length }}</h4>
-                            <small class="text-muted">Present</small>
-                        </div>
-                    </div>
-                    <div class="col-6">
-                        <h4 class="text-danger">{{ students|length - attendance|length }}</h4>
-                        <small class="text-muted">Absent</small>
-                    </div>
-                </div>
-                <div class="progress mt-3" style="height: 10px;">
-                    {% if students|length > 0 %}
-                        {% set percentage = (attendance|length / students|length) * 100 %}
-                        <div class="progress-bar bg-success progress-bar-custom" data-width="{{ percentage|round|int }}"></div>
-                    {% else %}
-                        <div class="progress-bar bg-secondary progress-bar-custom" data-width="0"></div>
-                    {% endif %}
-                </div>
-                <small class="text-muted">
-                    {% if students|length > 0 %}
-                        Attendance Rate: {{ "%.1f"|format((attendance|length / students|length) * 100) }}%
-                    {% else %}
-                        No students registered
-                    {% endif %}
-                </small>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Manual Attendance -->
-<div class="row">
-    <div class="col-12">
+<div class="row g-4">
+    <!-- Camera Feed -->
+    <div class="col-lg-8">
         <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0">
-                    <i class="fas fa-user-check"></i> Manual Attendance
+            <div class="card-header d-flex justify-content-between align-items-center bg-white border-0 py-3">
+                <h5 class="mb-0 fw-bold">
+                    <i class="fas fa-camera text-primary me-2"></i>
+                    Quick Attendance Scanner
+                </h5>
+                <button type="button" class="btn btn-outline-primary btn-sm" onclick="startWebcam()">
+                    <i class="fas fa-power-off me-1"></i> Reset Camera
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="camera-container text-center bg-dark rounded overflow-hidden position-relative"
+                    style="min-height: 480px;">
+                    <!-- Client Side Video -->
+                    <video id="webcam" autoplay playsinline
+                        style="width: 100%; height: 480px; object-fit: cover; transform: scaleX(-1);"></video>
+                    <canvas id="canvas" class="d-none"></canvas>
+
+                    <!-- Snap Button Overlay -->
+                    <div class="position-absolute bottom-0 start-0 w-100 p-3" style="background: rgba(0,0,0,0.5);">
+                        <button id="snapBtn" class="btn btn-primary btn-lg rounded-pill px-5 shadow-lg"
+                            onclick="snapAndVerify()">
+                            <i class="fas fa-camera fa-lg me-2"></i> Snap & Identify
+                        </button>
+                        <button id="loadingBtn" class="btn btn-warning btn-lg rounded-pill px-5 shadow-lg d-none"
+                            disabled>
+                            <span class="spinner-border spinner-border-sm me-2"></span> Verifying...
+                        </button>
+                    </div>
+
+                    <!-- Result Overlay -->
+                    <div id="resultOverlay"
+                        class="position-absolute top-0 start-0 w-100 h-100 d-none flex-column justify-content-center align-items-center"
+                        style="background: rgba(0,0,0,0.9); z-index: 10;">
+                        <div id="resultIcon" class="mb-3"></div>
+                        <h3 id="resultTitle" class="text-white fw-bold mb-2"></h3>
+                        <p id="resultMessage" class="text-light mb-4"></p>
+                        <button class="btn btn-light rounded-pill px-4" onclick="resetScanner()">
+                            <i class="fas fa-redo me-2"></i> Scan Next Student
+                        </button>
+                    </div>
+                </div>
+
+                <div class="alert alert-secondary mt-3 small">
+                    <i class="fas fa-lightbulb me-2 text-warning"></i>
+                    <strong>Tip:</strong> Look directly at the camera.
+                </div>
+            </div>
+        </div>
+
+        <!-- Manual Attendance -->
+        <div class="card mt-4">
+            <div class="card-header bg-white border-0 py-3">
+                <h5 class="mb-0 fw-bold">
+                    <i class="fas fa-hand-pointer text-warning me-2"></i>
+                    Manual Attendance
                 </h5>
             </div>
             <div class="card-body">
-                <div class="row">
-                    {% for student in students %}
-                        <div class="col-md-3 col-sm-6 mb-3">
-                            <div class="card">
-                                <div class="card-body text-center">
-                                    <img src="https://ui-avatars.com/api/?name={{ student.name }}&size=60&background=667eea&color=fff" 
-                                         class="rounded-circle mb-2" alt="{{ student.name }}">
-                                    <h6 class="card-title">{{ student.name }}</h6>
-                                    <button class="btn btn-sm btn-outline-primary mark-attendance-btn" 
-                                            data-student-name="{{ student.name }}">
-                                        <i class="fas fa-check"></i> Mark Present
-                                    </button>
-                                </div>
+                <form method="POST" action="{{ url_for('mark_attendance_manual') }}" class="row g-3">
+                    <div class="col-md-8">
+                        <select name="student_id" class="form-select" required>
+                            <option value="">Select a student...</option>
+                            {% for student in students %}
+                            <option value="{{ student.id }}">
+                                {{ student.name }} {% if student.roll_number %}({{ student.roll_number }}){% endif %}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <input type="hidden" name="class_id" value="{{ selected_class_id or 1 }}">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-check me-2"></i> Mark Present
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Today's Attendance -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header bg-white border-0 py-3">
+                <h5 class="mb-0 fw-bold">
+                    <i class="fas fa-list text-success me-2"></i>
+                    Today's Attendance
+                </h5>
+            </div>
+            <div class="card-body" style="max-height: 600px; overflow-y: auto;">
+                {% if attendance %}
+                <div class="attendance-list" id="attendanceList">
+                    {% for record in attendance %}
+                    <div class="attendance-item">
+                        <div class="d-flex align-items-center">
+                            <div class="avatar-sm me-3">
+                                <img src="https://ui-avatars.com/api/?name={{ record.name }}&size=40&background=11998e&color=fff"
+                                    class="rounded-circle" alt="{{ record.name }}">
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-0">{{ record.name }}</h6>
+                                <small class="text-muted">
+                                    {% if record.roll_number %}{{ record.roll_number }} • {% endif %}
+                                    {{ record.time_in }}
+                                </small>
+                            </div>
+                            <div>
+                                <span class="badge bg-success">
+                                    <i class="fas fa-check"></i>
+                                </span>
                             </div>
                         </div>
+                    </div>
                     {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">No attendance marked yet</p>
+                    <small class="text-muted">Students will appear here once attendance is marked</small>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="card mt-4">
+            <div class="card-body">
+                <h6 class="fw-bold mb-3">Quick Stats</h6>
+                <div class="stat-row">
+                    <span class="text-muted">Total Students:</span>
+                    <strong>{{ students|length }}</strong>
+                </div>
+                <div class="stat-row">
+                    <span class="text-muted">Present:</span>
+                    <strong class="text-success">{{ attendance|length }}</strong>
+                </div>
+                <div class="stat-row">
+                    <span class="text-muted">Absent:</span>
+                    <strong class="text-danger">{{ students|length - attendance|length }}</strong>
+                </div>
+                <div class="stat-row">
+                    <span class="text-muted">Attendance Rate:</span>
+                    <strong class="text-primary">
+                        {% if students|length > 0 %}
+                        {{ "%.1f"|format((attendance|length / students|length) * 100) }}%
+                        {% else %}
+                        0%
+                        {% endif %}
+                    </strong>
                 </div>
             </div>
         </div>
@@ -163,137 +202,187 @@
 </div>
 {% endblock %}
 
+{% block extra_css %}
+<style>
+    .camera-container {
+        position: relative;
+        background: #000;
+        border-radius: 15px;
+        overflow: hidden;
+        aspect-ratio: 16/9;
+    }
+
+    .attendance-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .attendance-item {
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 12px;
+        transition: all 0.3s ease;
+    }
+
+    .attendance-item:hover {
+        background: #e9ecef;
+        transform: translateX(5px);
+    }
+
+    .avatar-sm img {
+        width: 40px;
+        height: 40px;
+    }
+
+    .stat-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+    .stat-row:last-child {
+        border-bottom: none;
+    }
+
+    .attendance-stats {
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        color: white;
+        padding: 1rem;
+        border-radius: 12px;
+        text-align: center;
+    }
+
+    .attendance-stats h3 {
+        font-weight: 800;
+        margin-bottom: 0;
+    }
+</style>
+{% endblock %}
+
 {% block scripts %}
 <script>
-// Set progress bar widths from data attributes
-document.addEventListener('DOMContentLoaded', function() {
-    const progressBars = document.querySelectorAll('.progress-bar-custom');
-    progressBars.forEach(bar => {
-        const width = bar.getAttribute('data-width');
-        if (width) {
-            bar.style.width = width + '%';
+    const video = document.getElementById('webcam');
+    const canvas = document.getElementById('canvas');
+    const snapBtn = document.getElementById('snapBtn');
+    const loadingBtn = document.getElementById('loadingBtn');
+    const resultOverlay = document.getElementById('resultOverlay');
+
+    // Start Webcam
+    async function startWebcam() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            video.srcObject = stream;
+            resetScanner();
+        } catch (err) {
+            console.error("Camera Error:", err);
+            alert("Could not access camera. Please allow camera permissions.");
         }
-    });
-});
-
-let cameraStream = null;
-let recognitionInterval = null;
-
-// Start camera
-document.getElementById('startCamera').addEventListener('click', function() {
-    const videoElement = document.getElementById('cameraFeed');
-    const statusElement = document.getElementById('recognitionStatus');
-    
-    // Show video feed
-    videoElement.src = '/camera_feed';
-    videoElement.style.display = 'block';
-    document.querySelector('#cameraContainer > div').style.display = 'none';
-    
-    // Update UI
-    this.style.display = 'none';
-    document.getElementById('stopCamera').style.display = 'inline-block';
-    
-    statusElement.className = 'alert alert-success';
-    statusElement.innerHTML = '<i class="fas fa-circle text-success"></i> Camera active - Face recognition running';
-    
-    // Start face recognition simulation
-    startFaceRecognition();
-});
-
-// Stop camera
-document.getElementById('stopCamera').addEventListener('click', function() {
-    stopCamera();
-});
-
-function stopCamera() {
-    const videoElement = document.getElementById('cameraFeed');
-    const statusElement = document.getElementById('recognitionStatus');
-    
-    // Stop video feed
-    videoElement.src = '';
-    videoElement.style.display = 'none';
-    document.querySelector('#cameraContainer > div').style.display = 'flex';
-    
-    // Update UI
-    document.getElementById('startCamera').style.display = 'inline-block';
-    this.style.display = 'none';
-    
-    statusElement.className = 'alert alert-info';
-    statusElement.innerHTML = '<i class="fas fa-info-circle"></i> Camera stopped';
-    
-    // Stop face recognition
-    if (recognitionInterval) {
-        clearInterval(recognitionInterval);
-        recognitionInterval = null;
     }
-}
 
-function startFaceRecognition() {
-    // Simulate face recognition every 3 seconds
-    recognitionInterval = setInterval(() => {
-        // This would integrate with actual face recognition
-        // For now, just show that it's working
-        const statusElement = document.getElementById('recognitionStatus');
-        statusElement.innerHTML = '<i class="fas fa-circle text-success"></i> Scanning for faces...';
-    }, 3000);
-}
+    // Snap & Verify
+    function snapAndVerify() {
+        // Show loading
+        snapBtn.classList.add('d-none');
+        loadingBtn.classList.remove('d-none');
 
-// Manual attendance marking
-document.querySelectorAll('.mark-attendance-btn').forEach(button => {
-    button.addEventListener('click', function() {
-        const studentName = this.dataset.studentName;
-        
-        fetch('/mark_attendance', {
+        // Capture frame
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext('2d').drawImage(video, 0, 0);
+
+        // Convert to base64
+        const imageData = canvas.toDataURL('image/jpeg');
+
+        // Get context from template
+        const currentClassId = "{{ selected_class_id }}";
+
+        // Send to backend
+        fetch("{{ url_for('verify_face') }}", {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ student_name: studentName })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                image: imageData,
+                class_id: currentClassId || null
+            })
         })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                this.innerHTML = '<i class="fas fa-check-circle"></i> Marked';
-                this.classList.remove('btn-outline-primary');
-                this.classList.add('btn-success');
-                this.disabled = true;
-                
-                // Show success message
-                const alert = document.createElement('div');
-                alert.className = 'alert alert-success alert-dismissible fade show';
-                alert.innerHTML = `
-                    ${data.message}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                `;
-                document.querySelector('.card-body').prepend(alert);
-                
-                // Refresh page after 2 seconds
-                setTimeout(() => location.reload(), 2000);
-            } else {
-                // Show error message
-                const alert = document.createElement('div');
-                alert.className = 'alert alert-warning alert-dismissible fade show';
-                alert.innerHTML = `
-                    ${data.message}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                `;
-                document.querySelector('.card-body').prepend(alert);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-        });
-    });
-});
+            .then(res => res.json())
+            .then(data => {
+                showResult(data);
+            })
+            .catch(err => {
+                console.error(err);
+                alert("Network error occurred.");
+                resetScanner();
+            });
+    }
 
-// Auto-refresh attendance every 30 seconds
-setInterval(() => {
-    fetch('/api/attendance')
-        .then(response => response.json())
-        .then(data => {
-            // Update attendance display
-            console.log('Attendance updated:', data);
-        });
-}, 30000);
+    function showResult(data) {
+        loadingBtn.classList.add('d-none');
+        resultOverlay.classList.remove('d-none');
+        resultOverlay.classList.add('d-flex');
+
+        const icon = document.getElementById('resultIcon');
+        const title = document.getElementById('resultTitle');
+        const msg = document.getElementById('resultMessage');
+
+        if (data.status === 'success') {
+            icon.innerHTML = '<i class="fas fa-check-circle fa-4x text-success"></i>';
+            title.innerText = "Success!";
+            title.className = "text-success fw-bold mb-2";
+            msg.innerText = data.message;
+
+            // Dynamically add to list without reload
+            if (data.attendance_marked) {
+                const list = document.getElementById('attendanceList');
+                if (list) {
+                    // Remove "No attendance" message if empty (simple check)
+                    if (list.innerText.includes('No attendance marked yet')) {
+                        list.innerHTML = '';
+                    }
+
+                    const item = document.createElement('div');
+                    item.className = 'd-flex justify-content-between align-items-center border-bottom py-2';
+                    item.innerHTML = `
+                       <div>
+                           <strong class="text-dark">${data.student.name}</strong>
+                           ${data.student.roll_number ? `<br><small class="text-muted">${data.student.roll_number}</small>` : ''}
+                       </div>
+                       <span class="badge bg-success rounded-pill">${data.time_in}</span>
+                   `;
+                    list.prepend(item);
+
+                    // Update count top right
+                    const stats = document.querySelector('.attendance-stats h3');
+                    if (stats) {
+                        let current = parseInt(stats.innerText) || 0;
+                        stats.innerText = current + 1;
+                    }
+                }
+            }
+
+        } else if (data.status === 'unknown') {
+            icon.innerHTML = '<i class="fas fa-times-circle fa-4x text-danger"></i>';
+            title.innerText = "Not Recognized";
+            title.className = "text-danger fw-bold mb-2";
+            msg.innerText = "Face not recognized. Please move closer.";
+        } else {
+            icon.innerHTML = '<i class="fas fa-exclamation-triangle fa-4x text-warning"></i>';
+            title.innerText = "Error";
+            title.className = "text-warning fw-bold mb-2";
+            msg.innerText = data.message;
+        }
+    }
+
+    function resetScanner() {
+        resultOverlay.classList.remove('d-flex');
+        resultOverlay.classList.add('d-none');
+        snapBtn.classList.remove('d-none');
+        loadingBtn.classList.add('d-none');
+    }
+
+    // Auto-start
+    startWebcam();
 </script>
 {% endblock %}

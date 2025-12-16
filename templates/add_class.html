@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block title %}Add Class - Smart Attendance System{% endblock %}
+
+{% block page_title %}Add New Class{% endblock %}
+{% block page_subtitle %}Create a new class for your students{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-body p-4">
+                <form method="POST" action="{{ url_for('add_class') }}">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="name" class="form-label fw-bold">
+                                <i class="fas fa-chalkboard text-primary me-2"></i>Class Name *
+                            </label>
+                            <input type="text" class="form-control" id="name" name="name"
+                                placeholder="e.g., Computer Science 101" required>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="subject" class="form-label fw-bold">
+                                <i class="fas fa-book text-success me-2"></i>Subject
+                            </label>
+                            <input type="text" class="form-control" id="subject" name="subject"
+                                placeholder="e.g., Computer Science">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="teacher_name" class="form-label fw-bold">
+                                <i class="fas fa-user-tie text-info me-2"></i>Teacher Name
+                            </label>
+                            <input type="text" class="form-control" id="teacher_name" name="teacher_name"
+                                placeholder="e.g., Dr. John Smith">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="room_number" class="form-label fw-bold">
+                                <i class="fas fa-door-open text-warning me-2"></i>Room Number
+                            </label>
+                            <input type="text" class="form-control" id="room_number" name="room_number"
+                                placeholder="e.g., Room 101">
+                        </div>
+
+                        <div class="col-12">
+                            <label for="schedule" class="form-label fw-bold">
+                                <i class="fas fa-clock text-danger me-2"></i>Schedule
+                            </label>
+                            <input type="text" class="form-control" id="schedule" name="schedule"
+                                placeholder="e.g., Mon, Wed, Fri 9:00 AM - 10:30 AM">
+                            <small class="text-muted">Enter the class schedule (optional)</small>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i> Create Class
+                        </button>
+                        <a href="{{ url_for('classes') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times me-2"></i> Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
