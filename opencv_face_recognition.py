@@ -113,12 +113,19 @@ class OpenCVFaceRecognition:
                     img = cv2.imread(str(img_path))
                     if img is None: continue
                     
+                    # Optimization: Resize huge images before processing
+                    height, width = img.shape[:2]
+                    if width > 800:
+                        scale = 800 / width
+                        img = cv2.resize(img, (0,0), fx=scale, fy=scale)
+                    
                     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
                     gray = cv2.equalizeHist(gray)
                     
                     # Detect faces for cropping
+                    # Increased scaleFactor to 1.2 for speed
                     detected = self.face_cascade.detectMultiScale(
-                        gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30)
+                        gray, scaleFactor=1.2, minNeighbors=5, minSize=(30, 30)
                     )
                     
                     for (x, y, w, h) in detected:
