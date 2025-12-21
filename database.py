@@ -203,6 +203,14 @@ def init_database():
     except sqlite3.OperationalError:
         print("Migrating DB: Adding last_login to users...")
         cursor.execute("ALTER TABLE users ADD COLUMN last_login TIMESTAMP")
+        
+    # Migration: Add reset_token to users
+    try:
+        cursor.execute("SELECT reset_token FROM users LIMIT 1")
+    except sqlite3.OperationalError:
+        print("Migrating DB: Adding reset_token to users...")
+        cursor.execute("ALTER TABLE users ADD COLUMN reset_token TEXT")
+        cursor.execute("ALTER TABLE users ADD COLUMN reset_token_expiry TIMESTAMP")
     
     # Ensure active column exists for everyone if missing (safety)
     try:

@@ -66,6 +66,63 @@ def login():
             
     return render_template('login.html')
 
+@app.route('/forgot-password', methods=['GET', 'POST'])
+def forgot_password():
+    if request.method == 'POST':
+        email = request.form.get('email')
+        conn = get_db_connection()
+        user = conn.execute('SELECT * FROM users WHERE email = ?', (email,)).fetchone()
+        
+        if user:
+            import secrets
+            from datetime import timedelta, datetime
+            token = secrets.token_urlsafe(16)
+            expiry = (datetime.now() + timedelta(hours=1)).strftime('%Y-%m-%d %H:%M:%S')
+            
+            conn.execute('UPDATE users SET reset_token = ?, reset_token_expiry = ? WHERE id = ?',
+                         (token, expiry, user['id']))
+            conn.commit()
+            
+            # Simulation
+            reset_link = url_for('reset_password', token=token, _external=True)
+            print(f"\n{'='*50}\nPASSWORD RESET SIMULATION for: {email}\nLink: {reset_link}\n{'='*50}\n")
+            flash('Reset link sent to console (Development Mode)', 'info')
+        else:
+            flash('Email not found', 'error')
+        conn.close()
+        return redirect(url_for('login'))
+    return render_template('forgot_password.html')
+
+@app.route('/reset-password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    conn = get_db_connection()
+    user = conn.execute('SELECT * FROM users WHERE reset_token = ? AND reset_token_expiry > CURRENT_TIMESTAMP', (token,)).fetchone()
+    
+    if not user:
+        conn.close()
+        flash('Invalid or expired reset token', 'error')
+        return redirect(url_for('login'))
+        
+    if request.method == 'POST':
+        password = request.form.get('password')
+        confirm = request.form.get('confirm_password')
+        
+        if password != confirm:
+            flash('Passwords do not match', 'error')
+            return render_template('reset_password.html')
+            
+        hashed = generate_password_hash(password)
+        conn.execute('UPDATE users SET password_hash = ?, reset_token = NULL, reset_token_expiry = NULL WHERE id = ?',
+                     (hashed, user['id']))
+        conn.commit()
+        conn.close()
+        
+        flash('Password reset successful! Please login.', 'success')
+        return redirect(url_for('login'))
+        
+    conn.close()
+    return render_template('reset_password.html')
+
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
@@ -94,6 +151,7 @@ def logout():
     logout_user()
     flash('Logged out successfully.', 'info')
     return redirect(url_for('login'))
+@app.after_request
 def add_header(response):
     """Disable caching"""
     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
@@ -115,13 +173,16 @@ app.config['MAX_CONTENT_LENGTH'] = 64 * 1024 * 1024  # 64MB max file size
 from database import init_database
 init_database()
 
-# Initialize face recognition - Using OpenCV LBPH (works on Windows without dlib)
+# Initialize face recognition - Using AI (InsightFace)
 face_recognizer = None
+
+# Initialize AI Face Recognition
 try:
-    from opencv_face_recognition import OpenCVFaceRecognition
-    face_recognizer = OpenCVFaceRecognition()
-    print("✓ OpenCV Face Recognition initialized")
+    from ai_face_recognition import AIFaceRecognition
+    face_recognizer = AIFaceRecognition()
+    print("[OK] AI Face Recognition (InsightFace) initialized")
 except Exception as e:
+    print(f"[ERROR] AI Integration Error: {e}")
     face_recognizer = None
 
 # Global camera variable
