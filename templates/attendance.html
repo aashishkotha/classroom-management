@@ -6,10 +6,21 @@
 {% block page_subtitle %}Mark attendance using face recognition{% endblock %}
 
 {% block page_actions %}
-<a href="{{ url_for('reset_attendance') }}" class="btn btn-danger"
-    onclick="return confirm('Are you sure you want to reset all attendance records?')">
-    <i class="fas fa-redo me-2"></i> Reset Attendance
-</a>
+<div class="d-flex gap-2">
+    {% if current_class %}
+    <a href="{{ url_for('export_excel', class_id=current_class.id) }}" class="btn btn-success shadow-sm">
+        <i class="fas fa-file-excel me-2"></i> Excel Report
+    </a>
+    <button type="button" class="btn btn-info text-white shadow-sm" data-bs-toggle="modal"
+        data-bs-target="#uploadGroupModal">
+        <i class="fas fa-users me-2"></i> Bulk Photo
+    </button>
+    {% endif %}
+    <a href="{{ url_for('reset_attendance') }}" class="btn btn-danger shadow-sm"
+        onclick="return confirm('Are you sure you want to reset all attendance records?')">
+        <i class="fas fa-redo me-2"></i> Reset
+    </a>
+</div>
 {% endblock %}
 
 {% block content %}
@@ -198,6 +209,33 @@
                 </div>
             </div>
         </div>
+    </div>
+</div>
+
+<!-- Group Photo Upload Modal -->
+<div class="modal fade" id="uploadGroupModal" tabindex="-1">
+    <div class="modal-dialog">
+        <form action="{{ url_for('upload_group_attendance', class_id=current_class.id if current_class else 0) }}"
+            method="POST" enctype="multipart/form-data">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Batch Attendance via Group Photo</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted">Upload a clear photo of the classroom. The system will detect and mark
+                        attendance for all recognized faces.</p>
+                    <div class="mb-3">
+                        <label class="form-label">Upload Photo</label>
+                        <input type="file" name="group_photo" class="form-control" accept="image/*" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Process Photo</button>
+                </div>
+            </div>
+        </form>
     </div>
 </div>
 {% endblock %}

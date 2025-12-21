@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, Response, session
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, Response, session, send_file
 import os
 from datetime import datetime, timedelta
 import cv2
@@ -647,6 +647,128 @@ def attendance(class_id=None):
                          attendance=attendance_records,
                          students=students,
                          selected_class_id=class_id)
+
+# ============================================================================
+# NEW FEATURES: GROUP PHOTO & EXCEL
+# ============================================================================
+
+@app.route('/attendance/upload_group/<int:class_id>', methods=['POST'])
+@login_required
+def upload_group_attendance(class_id):
+    if 'group_photo' not in request.files:
+        flash('No file uploaded', 'error')
+        return redirect(url_for('attendance', class_id=class_id))
+    
+    file = request.files['group_photo']
+    if file.filename == '':
+        flash('No selected file', 'error')
+        return redirect(url_for('attendance', class_id=class_id))
+        
+    if file and face_recognizer:
+        # Save temp
+        filename = secure_filename(file.filename)
+        path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(path)
+        
+        # Process
+        import cv2
+        img = cv2.imread(path)
+        
+        if img is None:
+            flash('Invalid image file', 'error')
+            return redirect(url_for('attendance', class_id=class_id))
+
+        # Recognize
+        # Use a lower threshold for group photos as faces might be smaller/blurry
+        results = face_recognizer.recognize_faces(img, current_user.id)
+        
+        marked_count = 0
+        names = []
+        
+        conn = get_db_connection()
+        today = datetime.now().strftime('%Y-%m-%d')
+        time_now = datetime.now().strftime('%H:%M:%S')
+        
+        for res in results:
+            if res['name'] != "Unknown" and res['student_id']:
+                # Mark attendance
+                # Check duplicate for today
+                existing = conn.execute('''
+                    SELECT id FROM attendance 
+                    WHERE student_id = ? AND date = ? AND class_id = ?
+                ''', (res['student_id'], today, class_id)).fetchone()
+                
+                if not existing:
+                    conn.execute('''
+                        INSERT INTO attendance (student_id, class_id, date, time_in, status)
+                        VALUES (?, ?, ?, ?, 'Present')
+                    ''', (res['student_id'], class_id, today, time_now))
+                    marked_count += 1
+                    names.append(res['name'])
+        
+        conn.commit()
+        conn.close()
+        
+        # Clean up
+        try: os.remove(path)
+        except: pass
+        
+        if marked_count > 0:
+            flash(f'Successfully marked {marked_count} students: {", ".join(names)}', 'success')
+        else:
+            flash('No known students found in the photo.', 'warning')
+            
+    return redirect(url_for('attendance', class_id=class_id))
+
+@app.route('/attendance/export_excel/<int:class_id>')
+@login_required
+def export_excel(class_id):
+    try:
+        import pandas as pd
+        from io import BytesIO
+        
+        conn = get_db_connection()
+        
+        # Get Class info
+        class_info = conn.execute('SELECT name FROM classes WHERE id = ?', (class_id,)).fetchone()
+        class_name = class_info['name'] if class_info else "Attendance_Report"
+        
+        # Get Data
+        query = '''
+            SELECT s.name AS "Student Name", 
+                   s.roll_number AS "Roll Number", 
+                   a.date AS "Date", 
+                   a.time_in AS "Time", 
+                   'Present' as "Status"
+            FROM attendance a
+            JOIN students s ON a.student_id = s.id
+            WHERE a.class_id = ?
+            ORDER BY a.date DESC, s.name ASC
+        '''
+        df = pd.read_sql_query(query, conn, params=(class_id,))
+        conn.close()
+        
+        if df.empty:
+            flash('No attendance records found to export', 'info')
+            return redirect(url_for('attendance', class_id=class_id))
+            
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            df.to_excel(writer, sheet_name=class_name[:30], index=False)
+            
+        output.seek(0)
+        
+        return send_file(
+            output,
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            as_attachment=True,
+            download_name=f'{class_name}_Attendance_{datetime.now().strftime("%Y-%m-%d")}.xlsx'
+        )
+        
+    except Exception as e:
+        flash(f'Export failed: {e}', 'error')
+        print(f"Export Error: {e}")
+        return redirect(url_for('attendance', class_id=class_id))
 
 @app.route('/verify_face', methods=['POST'])
 @login_required
