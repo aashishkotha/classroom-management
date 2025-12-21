@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, Response, session, send_file
 import os
+import zipfile
 from datetime import datetime, timedelta
 import cv2
 import numpy as np
@@ -454,6 +455,93 @@ def add_student():
             flash('Error adding student. Roll number might already exist.', 'error')
     
     return render_template('add_student.html', classes=classes)
+
+@app.route('/students/bulk_upload', methods=['POST'])
+@login_required
+def bulk_upload_students():
+    class_id = request.form.get('class_id')
+    file = request.files.get('zip_file')
+    
+    if not file or not file.filename.endswith('.zip'):
+        flash('Please upload a valid ZIP file', 'error')
+        return redirect(url_for('students', class_id=class_id))
+    
+    # Save zip temp
+    temp_zip = os.path.join(app.config['UPLOAD_FOLDER'], 'temp_bulk.zip')
+    file.save(temp_zip)
+    
+    from database import add_student
+    count = 0
+    errors = 0
+    extract_path = os.path.join(app.config['UPLOAD_FOLDER'], 'temp_extract')
+    
+    try:
+        with zipfile.ZipFile(temp_zip, 'r') as zip_ref:
+            if os.path.exists(extract_path): shutil.rmtree(extract_path)
+            os.makedirs(extract_path)
+            zip_ref.extractall(extract_path)
+            
+            # Iterate
+            for root, dirs, files in os.walk(extract_path):
+                # If this folder contains images, treat it as a student folder
+                image_files = [f for f in files if f.lower().endswith(('.jpg', '.jpeg', '.png'))]
+                
+                if image_files:
+                    folder_name = os.path.basename(root)
+                    if folder_name == 'temp_extract' or folder_name.startswith('__'): continue 
+                    
+                    # Parse Name and Roll: "John Doe_101" or "John Doe"
+                    if '_' in folder_name:
+                        parts = folder_name.rsplit('_', 1)
+                        name = parts[0].replace('_', ' ')
+                        roll = parts[1]
+                    else:
+                        name = folder_name.replace('_', ' ')
+                        roll = ''
+                        
+                    # Add to DB
+                    try:
+                        student_id = add_student(name, roll, '', '', class_id)
+                        
+                        if student_id:
+                            # Move images
+                            target_folder = f"{student_id}_{secure_filename(name.lower().replace(' ', '_'))}"
+                            target_path = os.path.join(STUDENT_IMAGES, target_folder)
+                            os.makedirs(target_path, exist_ok=True)
+                            
+                            moved = 0
+                            for i, img_file in enumerate(image_files):
+                                try:
+                                    src = os.path.join(root, img_file)
+                                    dst = os.path.join(target_path, f"{i+1}.jpg")
+                                    shutil.copy(src, dst)
+                                    moved += 1
+                                except: pass
+                            
+                            if moved > 0:
+                                count += 1
+                            else:
+                                # Rollback if no images?
+                                pass
+                        else:
+                            errors += 1
+                    except Exception as e:
+                        print(f"Error adding {name}: {e}")
+                        errors += 1
+                        
+    except Exception as e:
+        flash(f'Error processing ZIP: {e}', 'error')
+    
+    # Clean up
+    if os.path.exists(temp_zip): os.remove(temp_zip)
+    if os.path.exists(extract_path): shutil.rmtree(extract_path)
+    
+    flash(f'Imported {count} students successfully. {errors} failed.', 'success' if count > 0 else 'warning')
+    
+    if count > 0:
+        flash('Please train the system now to recognize the new faces.', 'info')
+        
+    return redirect(url_for('students', class_id=class_id))
 
 @app.route('/edit_student/<int:student_id>', methods=['GET', 'POST'])
 def edit_student(student_id):

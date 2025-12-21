@@ -20,6 +20,9 @@ Manage all students across classes
 
 {% block page_actions %}
 <div class="btn-group">
+    <button type="button" class="btn btn-info text-white" data-bs-toggle="modal" data-bs-target="#bulkUploadModal">
+        <i class="fas fa-file-archive me-2"></i> Bulk Import
+    </button>
     <a href="{{ url_for('add_student') }}" class="btn btn-primary">
         <i class="fas fa-user-plus me-2"></i> Add Student
     </a>
@@ -30,6 +33,51 @@ Manage all students across classes
 {% endblock %}
 
 {% block content %}
+<!-- Bulk Upload Modal -->
+<div class="modal fade" id="bulkUploadModal" tabindex="-1">
+    <div class="modal-dialog">
+        <form action="{{ url_for('bulk_upload_students') }}" method="POST" enctype="multipart/form-data">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Bulk Import Students</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    {% if current_class %}
+                    <input type="hidden" name="class_id" value="{{ current_class.id }}">
+                    <p>Importing into: <strong>{{ current_class.name }}</strong></p>
+                    {% else %}
+                    <div class="mb-3">
+                        <label class="form-label">Select Class</label>
+                        <select name="class_id" class="form-select" required>
+                            {% for c in classes %}
+                            <option value="{{ c.id }}">{{ c.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    {% endif %}
+
+                    <div class="mb-3">
+                        <label class="form-label">Upload ZIP File</label>
+                        <input type="file" name="zip_file" class="form-control" accept=".zip" required>
+                    </div>
+
+                    <div class="alert alert-info small">
+                        <strong>ZIP Structure:</strong><br>
+                        - Create a folder for each student inside the ZIP.<br>
+                        - Folder Name format: <code>Name_RollNumber</code> (e.g. "John Doe_101") or just
+                        <code>Name</code>.<br>
+                        - Put student photos inside their folder.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Start Import</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
 <!-- Class Filter -->
 <div class="card mb-4">
     <div class="card-body">
