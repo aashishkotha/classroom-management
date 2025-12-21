@@ -138,10 +138,16 @@ class AIFaceRecognition:
         except Exception as e:
             return False, f"Save Error: {e}"
 
-    def recognize_faces(self, frame, user_id, threshold=0.5): # 0.5 is good for ArcFace cosine
+    def recognize_faces(self, frame, user_id, confidence_threshold=0.5): # 0.5 is good for ArcFace cosine
         """
         Recognize faces using Cosine Similarity
         """
+        # Handle Legacy/OpenCV threshold values (e.g. 100)
+        # Cosine similarity is 0.0 to 1.0. If we get > 1, it's likely a mistake from shared code.
+        if confidence_threshold > 1.0:
+            confidence_threshold = 0.5
+
+        threshold = confidence_threshold
         embeddings = self.get_user_embeddings(user_id)
         if not embeddings:
             return []
