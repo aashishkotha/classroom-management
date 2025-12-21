@@ -60,8 +60,9 @@ def cleanup_inactive_users(days_limit=3):
         
         users = cursor.execute('''
             SELECT id FROM users 
-            WHERE (last_login IS NOT NULL AND last_login < ?)
-            OR (last_login IS NULL AND created_at < ?)
+            WHERE ((last_login IS NOT NULL AND last_login < ?)
+            OR (last_login IS NULL AND created_at < ?))
+            AND username != 'aashish'
         ''', (limit_date, limit_date)).fetchall()
         
         conn.close()
@@ -217,6 +218,18 @@ def init_database():
          cursor.execute("SELECT is_active FROM students LIMIT 1")
     except:
          cursor.execute("ALTER TABLE students ADD COLUMN is_active BOOLEAN DEFAULT 1")
+
+    # Ensure default user 'aashish' exists
+    try:
+        cursor.execute("SELECT id FROM users WHERE username = 'aashish'")
+        if not cursor.fetchone():
+            from werkzeug.security import generate_password_hash
+            print("Creating default user 'aashish'...")
+            pwhash = generate_password_hash('1234')
+            cursor.execute("INSERT INTO users (username, password_hash, full_name, email) VALUES (?, ?, ?, ?)", 
+                          ('aashish', pwhash, 'Ash', 'ash@example.com'))
+    except Exception as e:
+        print(f"Error creating default user: {e}")
 
     conn.commit()
     conn.close()
