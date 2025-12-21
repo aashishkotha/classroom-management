@@ -176,14 +176,34 @@ init_database()
 # Initialize face recognition - Using AI (InsightFace)
 face_recognizer = None
 
-# Initialize AI Face Recognition
-try:
-    from ai_face_recognition import AIFaceRecognition
-    face_recognizer = AIFaceRecognition()
-    print("[OK] AI Face Recognition (InsightFace) initialized")
-except Exception as e:
-    print(f"[ERROR] AI Integration Error: {e}")
-    face_recognizer = None
+# Intelligent Model Selection (Lite vs AI)
+USE_LITE_MODE = os.environ.get('RENDER') or os.environ.get('USE_LITE_MODE')
+
+if USE_LITE_MODE:
+    print("[INFO] Cloud Environment Detected: Using efficient OpenCV mode to save RAM.")
+    try:
+        from opencv_face_recognition import OpenCVFaceRecognition
+        face_recognizer = OpenCVFaceRecognition()
+        print("[OK] OpenCV Face Recognition initialized (Lite Mode)")
+    except Exception as e:
+        print(f"[ERROR] Lite Mode Init Failed: {e}")
+        face_recognizer = None
+else:
+    # Try AI Mode (High Accuracy)
+    try:
+        from ai_face_recognition import AIFaceRecognition
+        face_recognizer = AIFaceRecognition()
+        print("[OK] AI Face Recognition (InsightFace) initialized")
+    except Exception as e:
+        print(f"[WARN] AI Mode Failed (High RAM required?): {e}")
+        print("[INFO] Falling back to OpenCV mode...")
+        try:
+            from opencv_face_recognition import OpenCVFaceRecognition
+            face_recognizer = OpenCVFaceRecognition()
+            print("[OK] Fallback to OpenCV Face Recognition successful")
+        except Exception as e2:
+             print(f"[ERROR] Fallback failed: {e2}")
+             face_recognizer = None
 
 # Global camera variable
 camera = None
